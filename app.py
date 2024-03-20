@@ -35,7 +35,7 @@ def index():
     return "Welcome to my ORM app toDoList!"
 
 
-@app.route(BASE_URL + '/new')
+@app.route(BASE_URL + '/new', methods=['POST'])
 def create():
     task = Task(name='First Task', status=False, category='study')
     db.session.add(task)
@@ -43,21 +43,21 @@ def create():
     return 'Task added'
 
 
-@app.route(BASE_URL + '/read')
+@app.route(BASE_URL + '/read', methods=['GET'])
 def read():
     tasks = Task.query.all()
     print(tasks)
     return 'Task fetched'
     
     
-# @app.route(BASE_URL + '/update')
-# def update():
-#     return
+@app.route(BASE_URL + '/update', methods=['PUT'])
+def update():
+    return
 
 
-# @app.route(BASE_URL + '/delete')
-# def delete():
-#     return
+@app.route(BASE_URL + '/delete', methods=['DELETE'])
+def delete():
+    return
 
 
 
