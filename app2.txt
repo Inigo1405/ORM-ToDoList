@@ -1,0 +1,63 @@
+from flask import Flask, request, abort, jsonify
+from sqlalchemy import Column, Integer, ForeignKey, TIMESTAMP, String, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+
+from sqlalchemy.orm import sessionmaker
+import time
+
+Base = declarative_base()
+Session = sessionmaker()
+session = Session()
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///task.db'
+
+
+class Task(Base):
+    __tablename__ = 'tasks'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(70), nullable=False)
+    category = Column(String(120))
+    status = Column(Boolean)
+    created_Date = Column(TIMESTAMP)
+    update = Column(TIMESTAMP)
+    
+    
+    def __init__(self, name, category):    
+        self.name = name
+        self.category = category
+        self.status: False
+        
+        
+        
+    def __repr__(self):
+        return
+    
+    
+BASE_URL = '/api/v1'
+    
+@app.route('/')
+def index():
+    return "Welcome to my ORM app toDoList!", 200
+
+
+@app.route(BASE_URL + '/new', method=['POST'])
+def create():
+    session.add(Task(name='First Task', category='Study'))
+    session.commit()
+    
+    return 'Task added'
+
+
+@app.route(BASE_URL + '/read', method=['GET'])
+def read():
+    session.query('tasks').all()
+    return 
+    
+# @app.route(BASE_URL + '/update')
+# def update():
+#     return
+
+if __name__ == '__main__':
+    app.run(debug=False)
