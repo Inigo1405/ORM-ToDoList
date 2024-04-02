@@ -1,9 +1,13 @@
+from datetime import datetime
+from dotenv import load_dotenv
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///task.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 
 db = SQLAlchemy(app)
 BASE_URL = '/api/v1'
@@ -17,61 +21,72 @@ class Task(db.Model):
     created_Date = db.Column(db.TIMESTAMP, nullable=False)
     update = db.Column(db.TIMESTAMP, nullable=False)
     
-    def __init__(self, name, status, category):    
+    def __init__(self, name, status, category=None):    
         self.name = name
         self.category = category
         self.status = status
         self.created_Date = datetime.now()
         self.update = datetime.now()
         
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "created_Date": self.created_Date,
+            "status": self.status,
+            "update": self.update
+        }
+        
     def __repr__(self):
         return f'<Task {self.name}>'
     
 
-    
-# --- MAIN -------------------------------------------------------------------- 
-@app.route('/')
-def index():
-    return "Welcome to my ORM app toDoList!"
-
 
 @app.route(BASE_URL + '/new', methods=['POST'])
 def create():
-    task = Task(name='First Task', status=False, category='study')
+    if not request.json or 'name' not in request.json:
+        abort(400)
+        
+    task = Task(name=request.json['name'], status=False)
     db.session.add(task)
     db.session.commit()
-    
-    return 'Task added'
+    return jsonify(task.to_json()), 201
 
 
 @app.route(BASE_URL + '/read', methods=['GET'])
 def read():
     tasks = Task.query.all()
-    print(tasks)
-    
-    return 'Task fetched'
+    return jsonify([task.to_json() for task in tasks])
     
     
-@app.route(BASE_URL + '/update', methods=['PUT'])
-def update(info:dict):
-    data = db.session.query('Task').filter(id = 'Task'.id).first()
+@app.route(BASE_URL + '/update/<id>', methods=['PUT'])
+def update(id:int):
+    task = Task.query.get(id)
     
-    for key, value in info.items():
-        setattr(data, key, value)
-        db.session.commit()
+    if not task:
+        abort(400)
         
-    return 'Task Update'
+    task.status = not task.status
+    db.session.commit()
+    return jsonify(task.to_json()), 201
 
 
 @app.route(BASE_URL + '/delete', methods=['DELETE'])
 def delete(id):
-    data = db.session.query('Task').filter(id = 'Task'.id).first()
-    db.session.delete(data)
+    task = Task.query.get(id)
+    if not task:
+        abort(400)
+        
+    db.session.delete(task)
     db.session.commit()
     
-    return 'Task Deleted'
+    return jsonify(task.to_json())
 
 
+# --- MAIN -------------------------------------------------------------------- 
+@app.route('/')
+def index():
+    return "Welcome to my ORM app toDoList!"
 
 if __name__ == '__main__':
     with app.app_context():
